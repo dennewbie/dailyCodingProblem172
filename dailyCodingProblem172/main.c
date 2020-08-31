@@ -25,7 +25,7 @@
 #include <string.h>
 //#include <math.h>
 
-void findIndexes(char *, char *, int *, int);
+int findIndexes(char *, char *, int *, int);
 void getErrorMemory(char *);
 
 int main(int argc, const char * argv[]) {
@@ -36,8 +36,8 @@ int main(int argc, const char * argv[]) {
     int *occurrences = (int *) malloc(strlen(string) / (strlen(words[0]) + strlen(words[1])) * sizeof(int) *  (sizeof(words) / sizeof(words[0])));
     if(!occurrences) getErrorMemory("occurrences");
     
-    int size = ((int) floor(strlen(string) / (strlen(words[0]) + strlen(words[1])))) *  (sizeof(words) / sizeof(words[0]));
-    printf("\nSize: %d\n", size);
+    int size = ((int) (strlen(string) / (strlen(words[0]) + strlen(words[1])))) *  (sizeof(words) / sizeof(words[0]));
+    
     int nWords = sizeof(words) / sizeof(words[0]);
     for(int i = 0; i < size; i++) occurrences[i] = -1;
     
@@ -47,11 +47,17 @@ int main(int argc, const char * argv[]) {
     for(int i = 0; i < nWords; i++) strcpy(key + (strlen(words[0]) * i), words[i]);
     for(int i = 0; i < nWords; i++)strcpy(revKey + (strlen(words[0]) * i), revWords[i]);
     
-    int i, j, counter = 0;
+    int i, j, counter = 0, idx;
     for (i = 0; i < size / 2; i++) {
-        i == 0 ? findIndexes(string + counter, key, occurrences, i) : findIndexes(string + counter + (strlen(words[0]) * 2), key, occurrences, i);
-
-        if (occurrences[i] != -1) {
+        if (i == 0) {
+            idx = findIndexes(string + counter, key, occurrences, i);
+        } else {
+            idx = findIndexes(string + counter + (strlen(words[0]) * 2), key, occurrences, i);
+        }
+        
+        
+        if (idx != -1) {
+            occurrences[i] = (int) (idx + ((counter * strlen(key)))) % strlen(string);
             counter = occurrences[i];
         } else {
             break;
@@ -59,11 +65,16 @@ int main(int argc, const char * argv[]) {
     }
     
     counter = 0;
-    for (j = i; j < size; j++) {
-        j == i ? findIndexes(string + counter, revKey, occurrences, j) : findIndexes(string + counter + (strlen(words[0]) * 2), revKey, occurrences, j);
-        
-        if (occurrences[j] != -1) {
-            counter = occurrences[j];
+    for (j = 0; j < size / 2; j++) {
+        if (j == 0) {
+            idx = findIndexes(string + counter, revKey, occurrences, j);
+        } else {
+            idx = findIndexes(string + counter + (strlen(words[0]) * 2), revKey, occurrences, j);
+        }
+
+        if (idx != -1) {
+            occurrences[j + i] = (int) (idx + ((counter * strlen(key)))) % strlen(string);
+            counter = occurrences[j + i];
         } else {
             break;
         }
@@ -76,15 +87,15 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 
-void findIndexes(char *string, char *key, int *occurrences, int counter) {
+int findIndexes(char *string, char *key, int *occurrences, int counter) {
     int stringLength = (int) strlen(string), keyLength = (int) strlen(key);
     
     for (int i = 0; i <= (stringLength - keyLength); i++) {
         if (strncmp(string + i, key, keyLength) == 0) {
-            occurrences[counter] = i;
-            return;
+            return i + (keyLength * counter);
         }
     }
+    return -1;
 }
 
 void getErrorMemory(char *errMsg) {
